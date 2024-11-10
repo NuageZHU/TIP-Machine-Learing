@@ -44,7 +44,7 @@ for i = 1:numel(clsFiles)
     labelsTrain(i) = strjoin(string(labels), ',');
 end
 
-% Convert labelsTrain to a cell array of character vectors and assign it to imgDataTrain
-imgDataTrain.Labels = cellstr(labelsTrain);
+% Convert the labelsTrain string array to a categorical type for easier handling in classification tasks
+imgDataTrain.Labels = categorical(labelsTrain);
 
 

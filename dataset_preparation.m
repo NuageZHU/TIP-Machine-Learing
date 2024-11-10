@@ -47,4 +47,5 @@ end
 % Convert labelsTrain to a cell array of character vectors and assign it to imgDataTrain
 imgDataTrain.Labels = cellstr(labelsTrain);
 
-
+% Save imgDataTrain to a .mat file for later use
+save('imgDataTrain.mat', 'imgDataTrain');

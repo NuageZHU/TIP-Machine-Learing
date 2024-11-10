@@ -4,6 +4,7 @@ close all
 % Set the path for the training image folder and limit to the first 100 images
 trainImgFolder = 'train-resized';
 imgFiles = dir(fullfile(trainImgFolder, '*.jpg'));
+
 %imgFiles = imgFiles(1:min(100, numel(imgFiles))); % Only take the first 100 files
 
 % Define a temporary datastore limited to the first 100 images
@@ -13,6 +14,7 @@ imgDataTrain = imageDatastore(imgFileNames); % Create datastore with only 100 im
 % Get the filenames of label files, also limiting to the first 100 files
 clsFolder = 'train';
 clsFiles = dir(fullfile(clsFolder, '*.cls'));
+
 %clsFiles = clsFiles(1:min(100, numel(clsFiles))); % Only take the first 100 files
 
 % Check if the number of image files matches the number of label files

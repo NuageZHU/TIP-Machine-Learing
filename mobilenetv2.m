@@ -1,10 +1,12 @@
 numClasses = 80;
-net = imagePretrainedNetwork("mobilenetv2", NumClasses=numClasses);
+net = imagePretrainedNetwork("resnet50", NumClasses=numClasses);
 
 %On remplace la couche pleinement connectée par une autre qui a 80 sorties
-net = replaceLayer(net, "Logits", fullyConnectedLayer(numClasses,'Name','fullyconnected_80'));
+% Elle s'appelle Logits sur mobilenetv2, fc1000 sur resnet50
+net = replaceLayer(net, "fc1000", fullyConnectedLayer(numClasses,'Name','fullyconnected_80'));
 % On remplace la couche softmax par sigmoid pour pouvoir avoir plusieurs labels par image
-net = replaceLayer(net,"Logits_softmax", sigmoidLayer("Name", "SigmoidLayer"));
+% Elle s'appelle Logits_softmax sur mobilenetv2, fc1000_softmax sur resnet50
+net = replaceLayer(net,"fc1000_softmax", sigmoidLayer("Name", "SigmoidLayer"));
 
 %% On freeze les paramètres sauf ceux de la dernière couche pleinement connectée
 learnables = net.Learnables;
@@ -22,8 +24,10 @@ net = setLearnRateFactor(net,"fullyconnected_80","Bias", 1);
 
 %% On récupère les données d'entraînement et de validation
 inputSize = net.Layers(1).InputSize; % 224x224x3
+
 [dataTrain, encodedLabelsTrain, fileNamesTrain] = prepareData("trainingData.mat", inputSize, true);
 [dataValidation, encodedLabelsValidation, fileNamesValidation] = prepareData("validationData.mat", inputSize, false);
+[dataTest, ~, fileNamesTest] = prepareData("testData.mat", inputSize, false);
 
 options = trainingOptions("adam", ...
     InitialLearnRate=0.001, ...
@@ -45,17 +49,19 @@ save("trainedNetwork.mat", "trainedNet");
 
 thresholdValue = 0.5;
 
-scores = minibatchpredict(trainedNet,dataValidation);
+scores = minibatchpredict(trainedNet,dataTest);
 
 YPred = double(scores >= thresholdValue);
 
-%% Calcul de la précision et du score F1 grâce aux données de validation
+%% Calcul de la précision et du score F1
+% A décommenter uniquement si on prédit sur la base de validation
+% (vu qu'on connait leurs labels), sur la base de test on ne peut pas savoir
 
-[precision, FScore] = Scores(encodedLabelsValidation, YPred);
+%[precision, FScore] = Scores(encodedLabelsValidation, YPred);
 
 %% Génère le fichier JSON avec le format attendu par le prof
 
-generateJson(fileNamesValidation, YPred);
+generateJson(fileNamesTest, YPred);
 
 
 %% Fonctions utiles
@@ -86,6 +92,8 @@ function [] = generateJson(filesName, labels)
         labelIndices = find(labels(i,:) == 1);
 
         labelIndices = double(labelIndices);
+
+        labelIndices = labelIndices - 1;
         
         % Si on a une seule valeur, on la met dans un tableau
         if length(labelIndices) == 1

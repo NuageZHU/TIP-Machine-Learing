@@ -7,14 +7,14 @@
 dataFolder = fullfile(pwd, "ms-coco"); % On suppose que la base ms-coco est dans le même dossier que ce script
 
 % On charge les données d'entraînement
-numberFilesTraining = 200; % Nombre d'images d'entraînement utilisés
+numberFilesTraining = 2000; % Nombre d'images d'entraînement utilisés
 labelLocationTraining = fullfile(dataFolder,"labels","train");
 imageLocationTraining = fullfile(dataFolder,"images", "train-resized");
 fileSaveTraining = "trainingData.mat";
 varSaveTraining = "dataTableTraining";
 
 % On charge les données de validation
-numberFilesValidation = 20; % Nombre d'images de validation utilisées
+numberFilesValidation = 200; % Nombre d'images de validation utilisées
 labelLocationValidation = fullfile(dataFolder,"labels","validation");
 imageLocationValidation = fullfile(dataFolder,"images", "validation");
 fileSaveValidation = "validationData.mat";
@@ -26,8 +26,6 @@ imageLocationTest = fullfile(dataFolder,"images", "test-resized");
 fileSaveTest = "testData.mat";
 varSaveTest = "dataTableTest";
 
-
-
 loadDataTable(fileSaveTraining, varSaveTraining, labelLocationTraining, imageLocationTraining, numberFilesTraining, false);
 loadDataTable(fileSaveValidation, varSaveValidation, labelLocationValidation, imageLocationValidation, numberFilesValidation, false);
 loadDataTable(fileSaveTest, varSaveTest, "", imageLocationTest, numberFilesTest, true);
@@ -35,8 +33,8 @@ loadDataTable(fileSaveTest, varSaveTest, "", imageLocationTest, numberFilesTest,
 
 function [] = loadDataTable(fileSaveName, varSaveName, labelLocation, imageLocation, numberFiles, test)
     imgFiles = dir(fullfile(imageLocation, '*.jpg'));
-    
-    imgFiles = imgFiles(1:min(numberFiles, numel(imgFiles))); % Only take the first numberFiles files
+    numberFiles = min(numberFiles, numel(imgFiles));
+    imgFiles = imgFiles(1:numberFiles); % Only take the first numberFiles files
     % Define a temporary datastore limited to the first 100 images
     imageFilename = fullfile(imageLocation, {imgFiles.name})';
     
@@ -46,7 +44,7 @@ function [] = loadDataTable(fileSaveName, varSaveName, labelLocation, imageLocat
              % Get the filenames of label files, also limiting to the first 100 files
         clsFiles = dir(fullfile(labelLocation, '*.cls'));
         
-        clsFiles = clsFiles(1:min(numberFiles, numel(clsFiles))); % Only take the first numberFiles files
+        clsFiles = clsFiles(1:numberFiles); % Only take the first numberFiles files
         
         % Check if the number of image files matches the number of label files
         if numel(imgFiles) ~= numel(clsFiles)

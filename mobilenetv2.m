@@ -33,7 +33,7 @@ options = trainingOptions("adam", ...
     InitialLearnRate=0.001, ...
     MiniBatchSize=32, ...
     Shuffle='every-epoch', ...
-    MaxEpochs=10, ...
+    MaxEpochs=16, ...
     Verbose= false, ...
     ValidationData=dataValidation, ...
     ValidationFrequency=5, ...
@@ -41,7 +41,7 @@ options = trainingOptions("adam", ...
     Plots="training-progress");
 
 %% On lance l'entraînement
-trainedNet = trainnet(dataTrain, net,"binary-crossentropy",options);
+%trainedNet = trainnet(dataTrain, net,"binary-crossentropy",options);
 
 save("trainedNetwork.mat", "trainedNet");
 
@@ -49,7 +49,7 @@ save("trainedNetwork.mat", "trainedNet");
 
 thresholdValue = 0.5;
 
-scores = minibatchpredict(trainedNet,dataTest);
+scores = minibatchpredict(trainedNet,dataValidation);
 
 YPred = double(scores >= thresholdValue);
 
@@ -57,16 +57,16 @@ YPred = double(scores >= thresholdValue);
 % A décommenter uniquement si on prédit sur la base de validation
 % (vu qu'on connait leurs labels), sur la base de test on ne peut pas savoir
 
-%[precision, FScore] = Scores(encodedLabelsValidation, YPred);
+[precision, FScore, recall] = Scores(encodedLabelsValidation, YPred);
 
 %% Génère le fichier JSON avec le format attendu par le prof
 
-generateJson(fileNamesTest, YPred);
+generateJson(fileNamesValidation, YPred);
 
 
 %% Fonctions utiles
 
-function [precision, F1] = Scores(T,Y)
+function [precision, F1, recall] = Scores(T,Y)
     % TP: True Positive
     % FP: False Positive
     % TN: True Negative
@@ -80,6 +80,7 @@ function [precision, F1] = Scores(T,Y)
     
     F1 = TP/(TP + 0.5*(FP+FN));
     precision = TP/(TP+FP);
+    recall = TP/(TP+FN);
 end
 
 

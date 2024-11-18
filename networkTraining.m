@@ -1,12 +1,12 @@
 numClasses = 80;
-net = imagePretrainedNetwork("resnet50", NumClasses=numClasses);
+net = imagePretrainedNetwork("mobilenetv2", NumClasses=numClasses);
 
 %On remplace la couche pleinement connectée par une autre qui a 80 sorties
 % Elle s'appelle Logits sur mobilenetv2, fc1000 sur resnet50
-net = replaceLayer(net, "fc1000", fullyConnectedLayer(numClasses,'Name','fullyconnected_80'));
+net = replaceLayer(net, "Logits", fullyConnectedLayer(numClasses,'Name','fullyconnected_80'));
 % On remplace la couche softmax par sigmoid pour pouvoir avoir plusieurs labels par image
 % Elle s'appelle Logits_softmax sur mobilenetv2, fc1000_softmax sur resnet50
-net = replaceLayer(net,"fc1000_softmax", sigmoidLayer("Name", "SigmoidLayer"));
+net = replaceLayer(net,"Logits_softmax", sigmoidLayer("Name", "SigmoidLayer"));
 
 %% On freeze les paramètres sauf ceux de la dernière couche pleinement connectée
 learnables = net.Learnables;
@@ -29,19 +29,23 @@ inputSize = net.Layers(1).InputSize; % 224x224x3
 [dataValidation, encodedLabelsValidation, fileNamesValidation] = prepareData("validationData.mat", inputSize, false);
 [dataTest, ~, fileNamesTest] = prepareData("testData.mat", inputSize, false);
 
+f1score = fScoreMetric(ClassificationMode="multilabel");
+prec = precisionMetric(ClassificationMode="multilabel");
+rec = recallMetric(ClassificationMode="multilabel");
+
 options = trainingOptions("adam", ...
     InitialLearnRate=0.001, ...
-    MiniBatchSize=32, ...
+    MiniBatchSize=64, ...
     Shuffle='every-epoch', ...
     MaxEpochs=16, ...
-    Verbose= false, ...
+    Verbose=true, ...
     ValidationData=dataValidation, ...
-    ValidationFrequency=5, ...
-    Metrics='accuracy',...
+    ValidationFrequency=50, ...
+    Metrics={f1score, prec, rec},...
     Plots="training-progress");
 
 %% On lance l'entraînement
-%trainedNet = trainnet(dataTrain, net,"binary-crossentropy",options);
+trainedNet = trainnet(dataTrain, net,"binary-crossentropy",options);
 
 save("trainedNetwork.mat", "trainedNet");
 
@@ -49,7 +53,7 @@ save("trainedNetwork.mat", "trainedNet");
 
 thresholdValue = 0.5;
 
-scores = minibatchpredict(trainedNet,dataValidation);
+scores = minibatchpredict(trainedNet,dataTest);
 
 YPred = double(scores >= thresholdValue);
 
@@ -57,11 +61,11 @@ YPred = double(scores >= thresholdValue);
 % A décommenter uniquement si on prédit sur la base de validation
 % (vu qu'on connait leurs labels), sur la base de test on ne peut pas savoir
 
-[precision, FScore, recall] = Scores(encodedLabelsValidation, YPred);
+%[precision, FScore, recall] = Scores(encodedLabelsValidation, YPred);
 
 %% Génère le fichier JSON avec le format attendu par le prof
 
-generateJson(fileNamesValidation, YPred);
+generateJson(fileNamesTest, YPred);
 
 
 %% Fonctions utiles
